@@ -165,13 +165,17 @@ pub struct TKey(Address);
 
 // --------------- Mock Escrow (lock failure) ---------------
 
-#[contract]
-pub struct MockFailingEscrow;
+mod failing_escrow {
+    use soroban_sdk::{contract, contractimpl, Address, BytesN, Env};
 
-#[contractimpl]
-impl MockFailingEscrow {
-    pub fn lock(_env: Env, _invoice_id: BytesN<32>, _amount: u128, _issuer: Address) -> bool {
-        panic!("escrow lock failed");
+    #[contract]
+    pub struct MockFailingEscrow;
+
+    #[contractimpl]
+    impl MockFailingEscrow {
+        pub fn lock(_env: Env, _invoice_id: BytesN<32>, _amount: u128, _issuer: Address) -> bool {
+            panic!("escrow lock failed");
+        }
     }
 }
 
@@ -469,7 +473,9 @@ fn test_fund_invoice_escrow_lock_failure_preserves_state() {
     te.pool.deposit(&te.lp, &100_000_000_000);
     let invoice_id = create_and_list(&te, &te.usdc_id);
 
-    let failing_escrow_id = te.env.register_contract(None, MockFailingEscrow);
+    let failing_escrow_id = te
+        .env
+        .register_contract(None, failing_escrow::MockFailingEscrow);
     te.env.as_contract(&te.pool_id, || {
         te.env
             .storage()
